@@ -1,0 +1,12 @@
+#+title: argeus
+
+* About
+A HTTP monitoring tool, written in rust. 🦀
+
+The goal is to create an easy-to-use and (/blazingly/) fast aggregator, which can be configured using an external config file.  Should support several databases for long-time time-series storage (e.g. =influxdb=).
+
+* Usage
+TBA
+
+* Contributing
+TBA

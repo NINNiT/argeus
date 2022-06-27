@@ -1,17 +1,14 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
-use futures::{future::join_all, stream, StreamExt};
+use futures::future::join_all;
 use reqwest::Client;
 use tokio::{task, time};
 
 use crate::request::MonitoringEndpoint;
 
+mod database;
 mod request;
 
-const PARALLEL_REQUESTS: usize = 2;
 #[tokio::main]
 async fn main() {
     let client = Client::new();
@@ -39,9 +36,11 @@ async fn main() {
                 monitoring_endpoint.get_request().await;
                 if monitoring_endpoint.error().await.is_none() {
                     let status = monitoring_endpoint.status().await;
-                    println!("{:?}", status)
+                    let response_time = monitoring_endpoint.response_time().await;
+                    println!("{:?}", status);
+                    println!("{:?}", response_time);
                 } else {
-                    println!("{:?}", monitoring_endpoint.error().await.unwrap())
+                    println!("{:?}", monitoring_endpoint.error().await.unwrap());
                 }
             }
         });
