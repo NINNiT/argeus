@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use futures::future::join_all;
 use reqwest::Client;
-use tokio::{task, time};
+use tokio::time;
 
-use crate::request::MonitoringEndpoint;
+use crate::{database::influxdb, endpoint::MonitoringEndpoint};
 
 mod database;
-mod request;
+mod endpoint;
 
 #[tokio::main]
 async fn main() {
@@ -39,6 +39,9 @@ async fn main() {
                     let response_time = monitoring_endpoint.response_time().await;
                     println!("{:?}", status);
                     println!("{:?}", response_time);
+
+                    let influxdb_point = influxdb::generate_point(&monitoring_endpoint).await;
+                    println!("{:?}", influxdb_point);
                 } else {
                     println!("{:?}", monitoring_endpoint.error().await.unwrap());
                 }

@@ -53,4 +53,8 @@ impl MonitoringEndpoint {
     pub async fn error(&self) -> Option<&Error> {
         return self.error.as_ref();
     }
+
+    pub async fn url(&self) -> &str {
+        return self.url.as_ref();
+    }
 }
