@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use futures::future::join_all;
 use reqwest::Client;
@@ -10,20 +10,9 @@ mod database;
 mod endpoint;
 
 #[tokio::main]
-async fn main() {
+async fn main2() {
     let client = Client::new();
-    // let urls = vec!["https://reqres.inuf/api/dsdsusers?page=2"; 2];
     let urls = vec!["https://reqres.in/api/users?page=2"; 2];
-
-    // let mut monitoring_endpoint = MonitoringEndpoint::new(client.clone(), urls[0].to_string());
-    // monitoring_endpoint.get_request().await;
-
-    // if monitoring_endpoint.error().await.is_none() {
-    //     let status = monitoring_endpoint.status().await;
-    //     println!("{:?}", status)
-    // } else {
-    //     println!("{:?}", monitoring_endpoint.error().await.unwrap())
-    // }
 
     let handles = urls.into_iter().map(|url| {
         let cloned_client = client.clone();
@@ -50,4 +39,41 @@ async fn main() {
     });
 
     join_all(handles).await;
+}
+
+#[tokio::main]
+async fn main() {
+    let client = Client::new();
+    let urls = vec!["https://reqres.in/api/users?page=2"; 2];
+
+    let endpoints: Vec<MonitoringEndpoint> = urls
+        .iter()
+        .map(|url| {
+            let cloned_client = client.clone();
+            let endpoint = MonitoringEndpoint::new(cloned_client, url.to_string());
+            return endpoint;
+        })
+        .collect();
+
+    let mut interval = time::interval(Duration::from_secs(5));
+
+    loop {
+        interval.tick().await;
+        &endpoints.into_iter().for_each(|mut endpoint| {
+            tokio::spawn(async move {
+                endpoint.get_request().await;
+                if endpoint.error().await.is_none() {
+                    let status = endpoint.status().await;
+                    let response_time = endpoint.response_time().await;
+                    println!("{:?}", status);
+                    println!("{:?}", response_time);
+
+                    let influxdb_point = influxdb::generate_point(&endpoint).await;
+                    println!("{:?}", influxdb_point);
+                } else {
+                    println!("{:?}", endpoint.error().await.unwrap());
+                }
+            });
+        });
+    }
 }
